@@ -1,7 +1,8 @@
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, updateDoc } from "firebase/firestore";
 import { useState } from "react";
 import styled from "styled-components";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 // const Form
 // const TextArea
@@ -33,28 +34,64 @@ const SubmitBtn = styled.input`
     cursor: pointer;
 `
 
+const AttachFileButton = styled.label`
+  padding: 10px 0px;
+  color: #1d9bf0;
+  text-align: center;
+  border-radius: 20px;
+  border: 1px solid #1d9bf0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+`;
+
+const AttachFileInput = styled.input`
+  display: none;
+`;
+
+
 const PostWriteForm =  () => {
     const [feed, setFeed] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [file, setFile] = useState<File | null>(null);
 
     const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setFeed(e.target.value);
     }
+    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const {files} = e.target;
+        if(files && files.length === 1)
+        setFile(files[0]);
+    }
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
-            setIsLoading(true);
 
             const user = auth.currentUser;
             if(!user || feed === "") {
                 return
             }
             try {
-                await addDoc(collection(db, "feeds"),{
+                setIsLoading(true);
+                const doc = await addDoc(collection(db, "feeds"),{
                     feed: feed,
                     createdAt: Date.now(),
                     userName: user.displayName || "human",
                     userId: user.uid
                 })
+
+
+                if(file){
+                    const locationRef = ref(
+                        storage,
+                        `feeds/${user.uid}-${user.displayName}/${doc.id}`
+                    )
+                    const result = await uploadBytes(locationRef, file);
+                    const url = await getDownloadURL(result.ref)
+
+                    await updateDoc(doc, {
+                        photo: url
+                    })
+                }
             } catch (error) {
                 console.log(error)
             } finally{
@@ -65,6 +102,16 @@ const PostWriteForm =  () => {
         <Form onSubmit={onSubmit}>
             <TextArea placeholder="Write..." maxLength={100} value={feed} onChange={onChange}/>
             <SubmitBtn type="submit" value={isLoading ? "Posting..." : "Post"}/>
+            <AttachFileButton htmlFor="file">
+                {file ? "Photo added" : "Add photo"}
+            </AttachFileButton>
+
+            <AttachFileInput
+                onChange={onFileChange}
+                type="file"
+                id="file"
+                accept="image/*"
+            />
         </Form>
     )
 }

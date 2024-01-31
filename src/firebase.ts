@@ -7,8 +7,10 @@ import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 import firebaseConfig from "../config.ts";
+import { getStorage } from "firebase/storage";
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);

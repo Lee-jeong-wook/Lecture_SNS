@@ -4,6 +4,8 @@ import { auth } from "../firebase";
 import { HomeIcon } from "../atoms/icons/Home";
 import { UserIcon } from "../atoms/icons/User";
 import { ArrowLeftEnd } from "../atoms/icons/ArrowLeftEnd";
+import useToastStore from "../store/toast";
+import Toast from "../store/toast";
 
 const Wrapper = styled.div`
   display: grid;
@@ -46,6 +48,7 @@ const MenuItem = styled.div`
 
 export default function Layout() {
     const navi = useNavigate();
+    const { text, isShowing } = useToastStore();
     const onLogOut = async () => {
         if(confirm("로그아웃 하시겠습니까?")){
             await auth.signOut;
@@ -75,6 +78,7 @@ export default function Layout() {
                         </MenuItem>
                     </Link>
                 </Menu>
+                <Toast isVisible={isShowing}>{text}</Toast>
             <Outlet />
       </Wrapper>
         </>
